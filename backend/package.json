@@ -1,0 +1,26 @@
+{
+  "name": "cinebook-backend",
+  "version": "1.0.0",
+  "description": "Backend API for CineBook Movie Ticket Booking Application",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed/seed.js",
+    "test": "vitest run --reporter=verbose"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.0.0",
+    "vitest": "^3.0.4"
+  }
+}

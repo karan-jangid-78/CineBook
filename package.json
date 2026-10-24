@@ -1,0 +1,16 @@
+{
+  "name": "cinebook-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-Stack MERN Movie Ticket Booking Application",
+  "type": "module",
+  "scripts": {
+    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/src/server.js",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "test": "npm test --prefix backend"
+  }
+}
