@@ -7,8 +7,12 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Vitest](https://img.shields.io/badge/Tests-17%20Passed-FCC72B?logo=vitest)](https://vitest.dev/)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-cinebook--l1yb.onrender.com-success?style=for-the-badge&logo=render)](https://cinebook-l1yb.onrender.com)
+
 > **A portfolio project engineered for BTech software placement interviews.**
 > Demonstrates production-grade full-stack architecture, clean code practices, and **database-enforced concurrency control** to prevent double-booking race conditions.
+>
+> 🌐 **Live Website:** [https://cinebook-l1yb.onrender.com](https://cinebook-l1yb.onrender.com)
 
 ---
 
