@@ -5,7 +5,7 @@
   "description": "Full-Stack MERN Movie Ticket Booking Application",
   "type": "module",
   "scripts": {
-    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "install-all": "npm install --include=dev --prefix backend && npm install --include=dev --prefix frontend",
     "build": "npm run build --prefix frontend",
     "start": "node backend/src/server.js",
     "dev:backend": "npm run dev --prefix backend",
