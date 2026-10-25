@@ -3,6 +3,11 @@ import { config } from './env.js';
 
 let memoryReplSet = null;
 
+function maskMongoUri(uri) {
+  if (!uri) return 'undefined';
+  return uri.replace(/:([^@]+)@/, ':****@');
+}
+
 export async function connectDB() {
   // If already connected, return
   if (mongoose.connection.readyState === 1) {
@@ -10,10 +15,10 @@ export async function connectDB() {
   }
 
   try {
-    // First, attempt connecting to the configured MONGO_URI with short timeout
-    console.log(`[Database] Attempting connection to MongoDB at: ${config.mongoUri}`);
+    // Attempt connecting to the configured MONGO_URI
+    console.log(`[Database] Attempting connection to MongoDB at: ${maskMongoUri(config.mongoUri)}`);
     await mongoose.connect(config.mongoUri, {
-      serverSelectionTimeoutMS: 2500,
+      serverSelectionTimeoutMS: config.isProduction ? 5000 : 2500,
     });
     console.log(`[Database] Connected successfully to MongoDB: ${mongoose.connection.host}/${mongoose.connection.name}`);
     return mongoose.connection;
@@ -28,7 +33,7 @@ export async function connectDB() {
           replSet: { count: 1, storageEngine: 'wiredTiger' },
         });
         const uri = memoryReplSet.getUri('cinebook');
-        console.log(`[Database] Embedded MongoDB Replica Set started at: ${uri}`);
+        console.log(`[Database] Embedded MongoDB Replica Set started at: ${maskMongoUri(uri)}`);
         await mongoose.connect(uri);
         console.log(`[Database] Connected to embedded MongoDB successfully.`);
         return mongoose.connection;
@@ -37,6 +42,11 @@ export async function connectDB() {
         throw innerErr;
       }
     } else {
+      if (config.isProduction) {
+        throw new Error(
+          `[Database] Fatal: Unable to connect to production MongoDB (${err.message}). Embedded in-memory MongoDB fallback is disabled in production. Please check your MONGO_URI configuration.`
+        );
+      }
       throw err;
     }
   }

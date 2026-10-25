@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import {
   createSeatHold,
   releaseSeatHold,
@@ -14,6 +15,13 @@ export async function reserveSeats(req, res, next) {
       return res.status(400).json({
         success: false,
         message: 'showId and an array of seats are required',
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(showId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid showId format',
       });
     }
 

@@ -122,6 +122,23 @@ export async function createSeatHold({ showId, seatNumbers, userId, holdMinutes 
     throw err;
   }
 
+  // Enforce server-side maximum limit of 8 seats per booking
+  if (seatNumbers.length > 8) {
+    const err = new Error('You can select a maximum of 8 seats per booking');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Validate that every seat matches the theater layout (Rows A-F, Columns 1-10)
+  const SEAT_REGEX = /^[A-F]([1-9]|10)$/;
+  for (const seat of seatNumbers) {
+    if (typeof seat !== 'string' || !SEAT_REGEX.test(seat.trim().toUpperCase())) {
+      const err = new Error(`Invalid seat number: "${seat}". Seats must be between A1 and F10.`);
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   const normalizedSeats = seatNumbers.map((s) => s.trim().toUpperCase());
   // Check for duplicates in the request itself
   const uniqueRequested = new Set(normalizedSeats);

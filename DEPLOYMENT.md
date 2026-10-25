@@ -32,6 +32,21 @@ git push -u origin main
 
 We have configured CineBook to support both **Unified 1-Service Deployment** (easiest) and **Decoupled Deployment** (Vercel + Render).
 
+### Database Setup: Free MongoDB Atlas (Required for Production)
+
+Production environments require a persistent cloud database. Embedded in-memory MongoDB is strictly disabled in production to protect against data loss when containers sleep.
+
+1. Sign up for free at [mongodb.com/atlas](https://www.mongodb.com/atlas).
+2. Create a free **M0 Shared Cluster** (e.g. AWS / Mumbai or Frankfurt).
+3. Under **Database Access**, create a database user (e.g., `cinebook_admin`) with a secure password.
+4. Under **Network Access**, add IP `0.0.0.0/0` (Allow access from anywhere).
+5. Click **Connect** -> **Drivers** -> Copy your connection string:
+   ```text
+   mongodb+srv://cinebook_admin:<PASSWORD>@cluster0.xxxx.mongodb.net/cinebook?retryWrites=true&w=majority
+   ```
+
+---
+
 ### Method 1: Render (Unified Full-Stack Deployment — Recommended)
 Render hosts both the Express API and the React Vite frontend together under a single domain with zero CORS complications.
 
@@ -45,8 +60,9 @@ Render hosts both the Express API and the React Vite frontend together under a s
 5. Under **Environment Variables**, add:
    - `NODE_ENV`: `production`
    - `PORT`: `10000`
-   - `JWT_SECRET`: `cinebook_production_super_secret_key_2026`
-   - `USE_EMBEDDED_MONGO`: `true` *(or provide your `MONGO_URI` from free MongoDB Atlas M0)*
+   - `MONGO_URI`: `mongodb+srv://cinebook_admin:<PASSWORD>@cluster0.xxxx.mongodb.net/cinebook?retryWrites=true&w=majority`
+   - `JWT_SECRET`: A strong 32+ character random secret (or click Generate)
+   - `AUTO_SEED`: `true` *(set to `true` on your first deploy to safely seed demo movies and users; will never overwrite existing data)*
 6. Click **Deploy Web Service**!
    Your site will be live at `https://cinebook-xxxx.onrender.com`.
 
@@ -58,7 +74,12 @@ Render hosts both the Express API and the React Vite frontend together under a s
 1. In Render, create a Web Service pointing to `backend`.
 2. Build Command: `npm install`
 3. Start Command: `npm start`
-4. Copy your backend URL (e.g., `https://cinebook-api.onrender.com`).
+4. Environment Variables:
+   - `NODE_ENV`: `production`
+   - `MONGO_URI`: Your MongoDB Atlas connection string
+   - `JWT_SECRET`: A strong random secret
+   - `CLIENT_URL`: `https://cinebook.vercel.app` (your frontend domain)
+5. Copy your backend URL (e.g., `https://cinebook-api.onrender.com`).
 
 #### Step 2: Deploy Frontend on Vercel
 1. Sign in to [vercel.com](https://vercel.com) and click **Add New...** -> **Project**.

@@ -5,7 +5,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb)](https://www.mongodb.com/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Vitest](https://img.shields.io/badge/Tests-17%20Passed-FCC72B?logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Tests-30%20Passed-FCC72B?logo=vitest)](https://vitest.dev/)
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-cinebook--l1yb.onrender.com-success?style=for-the-badge&logo=render)](https://cinebook-l1yb.onrender.com)
 
@@ -27,13 +27,20 @@
    - MongoDB **Partial Unique Index** guarantees at most ONE active hold or booking per seat.
    - Rejects concurrent collisions with HTTP `409 Conflict`.
    - Tested under **100 concurrent requests** competing for the exact same seat.
-4. **Multi-Seat Atomicity**: All-or-nothing semantics—if any seat in a requested batch is unavailable, all other seats are rolled back.
+4. **Multi-Seat Atomicity & 8-Seat Limit**:
+   - Server-enforced maximum of 8 seats per booking.
+   - Hall layout regex validation (`/^[A-F]([1-9]|10)$/`) rejecting malformed or duplicate seats before database locks.
+   - All-or-nothing semantics—if any seat in a requested batch is unavailable, all other seats are rolled back.
 5. **5-Minute Reservation Holds**: Real-time visual countdown timer; auto-expires abandoned holds.
 6. **Delayed Cleanup Race Prevention**: Safe timestamp-based cleanup queries prevent an older delayed worker from accidentally killing a newer customer's reservation.
 7. **Simulated Payment & Idempotency**:
    - Clear simulated sandbox badge (no real credit cards charged).
    - Unique `reservationId` constraint prevents duplicate charges and repeated confirmations.
 8. **Digital Ticket Voucher & History**: Downloadable/printable confirmed tickets with reference codes and past vs. upcoming booking tabs.
+9. **Production Security & Defense-in-Depth**:
+   - Multi-tier rate limiting (15 attempts/15min on auth, 30 attempts/15min on holds) with Render reverse-proxy trust (`trust proxy: 1`).
+   - Environment-driven CORS origin allowlist.
+   - Production startup guards ensuring `MONGO_URI` (Atlas) and `JWT_SECRET` are strictly present.
 
 ---
 
@@ -41,17 +48,17 @@
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 18, Vite, Tailwind CSS, React Router v6, Axios, Lucide React Icons |
-| **Backend** | Node.js (ES Modules), Express.js, MongoDB, Mongoose ODM |
-| **Security** | JWT Authentication, `bcryptjs` password hashing, sanitized inputs |
-| **Database** | Supports local MongoDB, MongoDB Atlas, and **Auto Zero-Config Embedded MongoDB Replica Set** |
-| **Testing** | Vitest, Supertest, MongoMemoryReplSet |
+| **Frontend** | React 18, Vite, Tailwind CSS 3.4, React Router v6, Axios, Lucide React Icons |
+| **Backend** | Node.js (ES Modules), Express.js 4.21, MongoDB, Mongoose ODM |
+| **Security** | JWT Authentication, `bcryptjs` password hashing, `express-rate-limit`, CORS origin allowlist, server-side payload validation, credential masking in logs |
+| **Database** | Persistent external MongoDB Atlas for production; zero-config embedded replica set for local offline development & tests |
+| **Testing** | Vitest, Supertest, MongoMemoryReplSet (30 automated tests) |
 
 ---
 
 ## 🚀 Quick Start Guide (Windows)
 
-> **Zero-Configuration Setup:** CineBook automatically starts an embedded MongoDB Replica Set if no local MongoDB service is running on your machine. You do not need to install MongoDB Atlas or local service to run and test!
+> **Zero-Configuration Local Setup:** CineBook automatically starts an embedded MongoDB Replica Set if no local MongoDB service is running on your machine. You do not need to install MongoDB Atlas or local service to run and test locally!
 
 ### 1. Clone & Navigate to Project
 ```powershell
@@ -81,7 +88,7 @@ Open your browser to: **`http://localhost:5173`**
 
 ## 🧪 Running Automated Tests
 
-Run the full automated test suite (including the **100-concurrent-requests test**):
+Run the full automated test suite (including the **100-concurrent-requests test** and **security validation suite**):
 
 ```powershell
 cd backend
@@ -90,9 +97,8 @@ npm.cmd test
 
 ### Actual Test Execution Output
 ```text
-Test Files  2 passed (2)
-     Tests  17 passed (17)
-  Duration  8.05s
+Test Files  3 passed (3)
+     Tests  30 passed (30)
 
 ✓ auth.test.js (6 tests)
   ✓ 1. registers a new user with valid data and returns JWT token
@@ -114,6 +120,21 @@ Test Files  2 passed (2)
   ✓ 9. prevents a user from confirming or releasing another user reservation (403 Forbidden)
   ✓ 10. verifies booking persists and can be queried via /my-bookings and /:id
   ✓ 11. returns 400 Bad Request for missing or invalid parameters
+
+✓ security_and_validation.test.js (13 tests)
+  ✓ 1. rejects reservation requests with more than 8 seats with 400 Bad Request
+  ✓ 2. rejects reservation requests with malformed seat identifiers with 400 Bad Request
+  ✓ 3. rejects reservation requests containing duplicate seats in the payload with 400 Bad Request
+  ✓ 4. rejects reservation requests with an invalid showId format with 400 Bad Request
+  ✓ 5. rejects reservation requests with an empty or non-array seats payload with 400 Bad Request
+  ✓ 6. successfully accepts up to 8 valid seats (including case-insensitive input) with 201 Created
+  ✓ 7. returns HTTP 429 Too Many Requests when rate limiting threshold is exceeded
+  ✓ 8. permits requests from allowed local development origins with CORS headers
+  ✓ 9. permits requests with no origin header (same-origin, curl, server-to-server)
+  ✓ 10. rejects requests from unauthorized foreign origins with CORS error
+  ✓ 11. throws a fatal startup error if NODE_ENV=production and MONGO_URI is missing or points to localhost
+  ✓ 12. throws a fatal startup error if NODE_ENV=production and JWT_SECRET is missing or uses default dev secret
+  ✓ 13. validates successfully when production configurations are correctly set
 ```
 
 ---
@@ -125,7 +146,7 @@ For quick evaluation, click the **"Demo Login"** button in the navbar or on the 
 | Role | Email | Password | Permissions |
 |---|---|---|---|
 | **Demo User** | `john@example.com` | `password123` | Browsing, Reserving, Simulated Checkout, My Bookings |
-| **Demo Admin** | `admin@cinebook.com` | `admin123` | Administrative access |
+| **Demo Admin** | `admin@cinebook.com` | `admin123` | Elevated account (authorized to query any booking ID) |
 | **New User** | Register freely via UI | Min 6 chars | Standard user access |
 
 ---

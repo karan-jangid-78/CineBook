@@ -1,6 +1,6 @@
 import app from './app.js';
 import { connectDB, disconnectDB } from './config/db.js';
-import { config } from './config/env.js';
+import { config, validateEnv } from './config/env.js';
 import { Movie } from './models/Movie.js';
 import { runSeed } from './seed/seed.js';
 import { cleanupExpiredHolds } from './services/reservationService.js';
@@ -9,13 +9,22 @@ let cleanupTimer = null;
 
 async function startServer() {
   try {
+    // Validate critical environment configurations before startup
+    validateEnv();
+
     await connectDB();
 
-    // Auto-seed if database is brand new
+    // Auto-seed if database is brand new (safe insert, never wipes existing collections)
     const movieCount = await Movie.countDocuments();
     if (movieCount === 0) {
-      console.log('[Server] Database is empty. Running initial seed...');
-      await runSeed({ exitOnComplete: false });
+      if (!config.isProduction || config.autoSeed) {
+        console.log('[Server] Database is empty. Running initial safe seed...');
+        await runSeed({ exitOnComplete: false, cleanCollections: false });
+      } else {
+        console.log(
+          '[Server] Database has 0 movies. Automatic seeding is disabled in production. Run "npm run seed" if initial catalog data is required.'
+        );
+      }
     }
 
     // Background expiration cleanup job runs every 30 seconds
