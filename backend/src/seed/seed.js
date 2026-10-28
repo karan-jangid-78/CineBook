@@ -139,14 +139,19 @@ export async function runSeed(options = {}) {
     }
 
     let createdShows = [];
-    const showCount = await Show.countDocuments();
-    if (showCount === 0) {
+    const activeFutureShows = await Show.countDocuments({
+      isActive: true,
+      startTime: { $gte: new Date() },
+    });
+
+    if (activeFutureShows === 0) {
       createdShows = await Show.create(showsToInsert);
-      console.log(`[Seed] Created ${createdShows.length} shows.`);
+      console.log(`[Seed] Created ${createdShows.length} fresh shows.`);
     } else {
-      createdShows = await Show.find().limit(5);
-      console.log(`[Seed] Shows already exist (${showCount} shows present). Skipping creation.`);
+      createdShows = await Show.find({ startTime: { $gte: new Date() } }).limit(5);
+      console.log(`[Seed] Active upcoming shows already exist (${activeFutureShows} present).`);
     }
+
 
     // 6. Pre-seed a sample confirmed booking for the first show if not already present
     const existingDemoBooking = await Booking.findOne({ bookingReference: 'CB-DEMO-001' });

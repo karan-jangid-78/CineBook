@@ -1,5 +1,6 @@
 import { Show } from '../models/Show.js';
 import { getSeatLayoutAndAvailability } from '../services/reservationService.js';
+import { ensureUpcomingShows } from '../services/showScheduleService.js';
 
 export async function getShowSeats(req, res, next) {
   try {
@@ -33,10 +34,19 @@ export async function getShows(req, res, next) {
       query.startTime = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    const shows = await Show.find(query)
+    let shows = await Show.find(query)
       .populate('movie')
       .populate('cinema')
       .sort({ startTime: 1 });
+
+    // Auto-heal: If querying upcoming shows and 0 results found, ensure schedule and retry
+    if (shows.length === 0 && (!date || new Date(date).getTime() >= new Date().setHours(0, 0, 0, 0))) {
+      await ensureUpcomingShows({ daysAhead: 5, specificMovieId: movie || null });
+      shows = await Show.find(query)
+        .populate('movie')
+        .populate('cinema')
+        .sort({ startTime: 1 });
+    }
 
     res.status(200).json({
       success: true,
@@ -47,3 +57,4 @@ export async function getShows(req, res, next) {
     next(err);
   }
 }
+

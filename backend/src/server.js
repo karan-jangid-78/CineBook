@@ -4,6 +4,7 @@ import { config, validateEnv } from './config/env.js';
 import { Movie } from './models/Movie.js';
 import { runSeed } from './seed/seed.js';
 import { cleanupExpiredHolds } from './services/reservationService.js';
+import { ensureUpcomingShows } from './services/showScheduleService.js';
 
 let cleanupTimer = null;
 
@@ -27,17 +28,28 @@ async function startServer() {
       }
     }
 
+    // Ensure upcoming shows are fully scheduled for the next 5 days
+    await ensureUpcomingShows({ daysAhead: 5 });
+
     // Background expiration cleanup job runs every 30 seconds
+    let lastScheduleCheck = Date.now();
     cleanupTimer = setInterval(async () => {
       try {
         const expiredCount = await cleanupExpiredHolds();
         if (expiredCount > 0) {
           console.log(`[Cleaner] Expired ${expiredCount} stale seat hold(s).`);
         }
+
+        // Periodically verify upcoming shows every 1 hour
+        if (Date.now() - lastScheduleCheck > 60 * 60 * 1000) {
+          lastScheduleCheck = Date.now();
+          await ensureUpcomingShows({ daysAhead: 5 });
+        }
       } catch (err) {
         console.error('[Cleaner] Error cleaning expired holds:', err.message);
       }
     }, 30000);
+
 
     const server = app.listen(config.port, () => {
       console.log(`\n🎬 =================================================`);

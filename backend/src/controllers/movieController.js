@@ -1,5 +1,6 @@
 import { Movie } from '../models/Movie.js';
 import { Show } from '../models/Show.js';
+import { ensureUpcomingShows } from '../services/showScheduleService.js';
 
 export async function getMovies(req, res, next) {
   try {
@@ -47,13 +48,25 @@ export async function getMovieById(req, res, next) {
     }
 
     // Fetch active shows for this movie
-    const shows = await Show.find({
+    let shows = await Show.find({
       movie: id,
       isActive: true,
       startTime: { $gte: new Date(Date.now() - 30 * 60 * 1000) }, // shows within past 30 mins onwards
     })
       .populate('cinema')
       .sort({ startTime: 1 });
+
+    // Self-healing: if no future shows exist for a now_showing movie, generate fresh slate immediately
+    if (shows.length === 0 && movie.status !== 'upcoming') {
+      await ensureUpcomingShows({ daysAhead: 5, specificMovieId: id });
+      shows = await Show.find({
+        movie: id,
+        isActive: true,
+        startTime: { $gte: new Date(Date.now() - 30 * 60 * 1000) },
+      })
+        .populate('cinema')
+        .sort({ startTime: 1 });
+    }
 
     res.status(200).json({
       success: true,
@@ -66,3 +79,4 @@ export async function getMovieById(req, res, next) {
     next(err);
   }
 }
+

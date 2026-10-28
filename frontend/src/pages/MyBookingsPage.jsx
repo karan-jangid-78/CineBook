@@ -127,13 +127,23 @@ export default function MyBookingsPage() {
               ? 'You do not have any upcoming movie shows scheduled. Explore trending movies and book seats now!'
               : 'You haven’t attended any shows yet.'}
           </p>
-          <Link
-            to="/"
-            className="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-400 text-black font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-md"
-          >
-            <span>Explore Movies</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          {activeTab === 'upcoming' && pastBookings.length > 0 && (
+            <button
+              onClick={() => setActiveTab('past')}
+              className="text-xs text-amber-400 hover:text-amber-300 font-semibold underline block mx-auto py-1"
+            >
+              View {pastBookings.length} previous booking pass(es) in history →
+            </button>
+          )}
+          <div className="pt-1">
+            <Link
+              to="/"
+              className="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-400 text-black font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-md"
+            >
+              <span>Explore Movies & Book Seats</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
